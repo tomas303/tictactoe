@@ -1,0 +1,11 @@
+src/bin/
+src/obj/
+node_modules/
+src/*.js
+
+*.js
+*.html
+!index.html
+
+dist/
+.fake
