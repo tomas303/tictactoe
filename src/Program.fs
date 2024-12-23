@@ -1,6 +1,5 @@
 ﻿open Feliz
 open Browser.Dom
-open Browser.Types
 open System
 
 let calculateWinner (squares: string[]) =
@@ -23,7 +22,7 @@ let calculateWinner (squares: string[]) =
             if (squares.[a] <> "") && (squares.[a] = squares.[b]) && (squares.[a] = squares.[c]) then
                 result <- squares.[a]
         | _ ->
-                raise (Exception("unexpecte length of row")) 
+                raise (Exception("unexpected length of row")) 
     result
 
 [<ReactComponent>]
@@ -36,16 +35,14 @@ let Square (value: string) onSquareClick =
     ]
 
 [<ReactComponent>]
-let Board () =
+let Board xIsNext squares onPlay =
 
-    let (xIsNext, setXIsNext) = React.useState(true)
-    let (squares, setSquares) = React.useState([| for _ in 1..9 -> "" |])
     let winner = calculateWinner squares
     let status = 
         if winner <> "" then
             "Winner: " + winner
         else
-            "Next player: " + ( if xIsNext then "X" else "O")
+            "Next player: " + (if xIsNext then "X" else "O")
 
     let handleClick i =
         match winner with
@@ -57,8 +54,7 @@ let Board () =
                     nextSquares.[i] <- "X"
                 else
                     nextSquares.[i] <- "O"
-                setSquares nextSquares
-                setXIsNext (not xIsNext)
+                onPlay nextSquares
             | _ -> ()
         | _ -> ()
 
@@ -92,7 +88,58 @@ let Board () =
         ]
     ]
 
+[<ReactComponent>]
+let Game () =
+
+    let (history, sethistory) = React.useState([| [| for _ in 1..9 -> "" |] |])
+    let (currentMove, setCurrentMove) = React.useState(0)
+    let currentSquares = history.[currentMove]
+    let xIsNext = currentMove % 2 = 0
+
+    let handlePlay nextSquares =
+        let nextHistory = Array.append history[0..currentMove] [| nextSquares |]
+        sethistory nextHistory
+        setCurrentMove(nextHistory.Length - 1);
+
+    let jumpTo (nextMove: int) =
+        setCurrentMove nextMove
+
+    let moves = 
+        Array.mapi (fun idx _ ->
+            let description =
+                if idx > 0 then
+                    "Go to move #" + idx.ToString()
+                else
+                    "Go to game start"
+            Html.li [
+                prop.key idx
+                prop.children [
+                    Html.button [
+                        prop.onClick (fun _ -> jumpTo idx)
+                        prop.text description
+                    ]
+                ]
+            ]
+        ) history
+
+    Html.div [
+        prop.className "game"
+        prop.children [
+            Html.div [
+                prop.className "game-board"
+                prop.children [
+                    Board xIsNext currentSquares handlePlay
+                ]
+            ]
+            Html.div [
+                prop.className "game-info"
+                prop.children [
+                    Html.ol moves
+                ]
+            ]
+        ]
+    ]
 
 
 let root = ReactDOM.createRoot (document.getElementById "root")
-root.render (Board())
+root.render (Game())
